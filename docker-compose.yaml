@@ -1,0 +1,17 @@
+services:
+  mockai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mockai:latest
+    ports:
+      - "5002:5002"
+    environment:
+      - SERVER_PORT=5002
+      - MOCK_TYPE=random
+      - MOCK_FILE_PATH=data/contents.txt
+      - MOCK_FILE_SEPARATOR="@@@@"
+      - RESPONSE_DELAY_MS=500
+    volumes:
+      - ./data:/app/data:ro
+    command: pnpm start
