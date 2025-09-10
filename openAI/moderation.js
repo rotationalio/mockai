@@ -1,10 +1,19 @@
 const express = require("express");
 const router = express.Router();
 const delay = require("../utils/delay");
+const { serverDown } = require("../errors/serverDown");
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 router.post("/v1/moderations", async (req, res) => {
   then = Date.now();
+
+  if (serverDown()) {
+    requestCounter.inc({ method: "POST", path: "/v1/moderations", status: 500 });
+    requestLatency.observe({ method: "POST", path: "/v1/moderations", status: 500 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/moderations", status: 500 }, req.socket.bytesRead);
+    return res.status(500).json({ error: 'Server error' });
+  }
+
   const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
   await delay(delayTime);
   

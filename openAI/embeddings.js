@@ -1,10 +1,19 @@
 const express = require("express");
 const { contextLimitExceeded } = require("../errors/contextLimit");
+const { serverDown } = require("../errors/serverDown");
 const router = express.Router();
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics")
 
 router.post("/v1/embeddings", (req, res) => {
     then = Date.now();
+
+    if (serverDown()) {
+        requestCounter.inc({ method: "POST", path: "/v1/embeddings", status: 500 });
+        requestLatency.observe({ method: "POST", path: "/v1/embeddings", status: 500 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/embeddings", status: 500 }, req.socket.bytesRead);
+        return res.status(500).json({ error: 'Server error' });
+    }
+
     const {
         model,
         input

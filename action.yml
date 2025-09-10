@@ -31,6 +31,10 @@ inputs:
     description: 'Context Limit'
     required: false
     default: '40000'
+  down-rate:
+    description: 'Down Rate'
+    required: false
+    default: '0'
 runs:
   using: 'composite'
   steps:
@@ -53,6 +57,7 @@ runs:
           -e RESPONSE_DELAY_MS=${{ inputs.response-delay-ms }} \
           -e REQUEST_SIZE_LIMIT=${{ inputs.request-size-limit }} \
           -e CONTEXT_LIMIT=${{ inputs.context-limit }} \
+          -e DOWN_RATE=${{ inputs.down-rate }} \
           mockai:latest
       shell: bash
     - name: sleep

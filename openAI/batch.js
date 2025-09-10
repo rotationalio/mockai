@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const delay = require("../utils/delay");
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
+const { serverDown } = require("../errors/serverDown");
 
 // Mock batch data store
 let batches = new Map();
@@ -44,6 +45,14 @@ function generateMockEvents(batchId, status) {
 // Create a batch processing job
 router.post("/v1/batch", async (req, res) => {
     then = Date.now();
+
+    if (serverDown()) {
+        requestCounter.inc({ method: "POST", path: "/v1/batch", status: 500 });
+        requestLatency.observe({ method: "POST", path: "/v1/batch", status: 500 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/batch", status: 500 }, req.socket.bytesRead);
+        return res.status(500).json({ error: 'Server error' });
+    }
+
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -148,6 +157,14 @@ router.post("/v1/batch", async (req, res) => {
 // Get batch status
 router.get("/v1/batch/:batch_id", async (req, res) => {
     then = Date.now();
+
+    if (serverDown()) {
+        requestCounter.inc({ method: "GET", path: "/v1/batch/:batch_id", status: 500 });
+        requestLatency.observe({ method: "GET", path: "/v1/batch/:batch_id", status: 500 }, (Date.now() - then));
+        payloadSize.observe({ method: "GET", path: "/v1/batch/:batch_id", status: 500 }, req.socket.bytesRead);
+        return res.status(500).json({ error: 'Server error' });
+    }
+
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -175,6 +192,14 @@ router.get("/v1/batch/:batch_id", async (req, res) => {
 // Cancel batch
 router.post("/v1/batch/:batch_id/cancel", async (req, res) => {
     then = Date.now();
+
+    if (serverDown()) {
+        requestCounter.inc({ method: "POST", path: "/v1/batch/:batch_id/cancel", status: 500 });
+        requestLatency.observe({ method: "POST", path: "/v1/batch/:batch_id/cancel", status: 500 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/batch/:batch_id/cancel", status: 500 }, req.socket.bytesRead);
+        return res.status(500).json({ error: 'Server error' });
+    }
+
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -246,6 +271,14 @@ router.post("/v1/batch/:batch_id/cancel", async (req, res) => {
 // Get batch events
 router.get("/v1/batch/:batch_id/events", async (req, res) => {
     then = Date.now();
+
+    if (serverDown()) {
+        requestCounter.inc({ method: "GET", path: "/v1/batch/:batch_id/events", status: 500 });
+        requestLatency.observe({ method: "GET", path: "/v1/batch/:batch_id/events", status: 500 }, (Date.now() - then));
+        payloadSize.observe({ method: "GET", path: "/v1/batch/:batch_id/events", status: 500 }, req.socket.bytesRead);
+        return res.status(500).json({ error: 'Server error' });
+    }
+
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 

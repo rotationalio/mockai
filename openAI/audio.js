@@ -5,11 +5,22 @@ const upload = multer();
 const delay = require("../utils/delay");
 const { getMockAudioData } = require("../data/mockAudio");
 const { contextLimitExceeded } = require("../errors/contextLimit");
+const { serverDown } = require("../errors/serverDown");
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 // Text to Speech
 router.post("/v1/audio/speech", async (req, res) => {
   then = Date.now();
+  
+  if (serverDown()) {
+    requestCounter.inc({ method: "POST", path: "/v1/audio/speech", status: 500 });
+    requestLatency.observe({ method: "POST", path: "/v1/audio/speech", status: 500 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/audio/speech", status: 500 }, req.socket.bytesRead);
+    return res
+      .status(500)
+      .json({ error: 'Server error' });
+  }
+
   const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
   await delay(delayTime);
 
@@ -60,6 +71,16 @@ router.post("/v1/audio/speech", async (req, res) => {
 // Speech to Text (Transcription)
 router.post("/v1/audio/transcriptions", upload.single('file'), async (req, res) => {
   then = Date.now();
+
+  if (serverDown()) {
+    requestCounter.inc({ method: "POST", path: "/v1/audio/transcriptions", status: 500 });
+    requestLatency.observe({ method: "POST", path: "/v1/audio/transcriptions", status: 500 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/audio/transcriptions", status: 500 }, req.socket.bytesRead);
+    return res
+      .status(500)
+      .json({ error: 'Server error' });
+  }
+
   const delayTime = parseInt(req.get('x-set-response-delay-ms')) || 0;
   await delay(delayTime);
 
@@ -136,6 +157,16 @@ router.post("/v1/audio/transcriptions", upload.single('file'), async (req, res) 
 // Audio Translation
 router.post("/v1/audio/translations", upload.single('file'), async (req, res) => {
   then = Date.now();
+
+  if (serverDown()) {
+    requestCounter.inc({ method: "POST", path: "/v1/audio/translations", status: 500 });
+    requestLatency.observe({ method: "POST", path: "/v1/audio/translations", status: 500 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/audio/translations", status: 500 }, req.socket.bytesRead);
+    return res
+      .status(500)
+      .json({ error: 'Server error' });
+  }
+
   const delayTime = parseInt(req.get('x-set-response-delay-ms')) || 0;
   await delay(delayTime);
 
