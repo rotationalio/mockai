@@ -6,12 +6,13 @@ const delay = require("../utils/delay");
 const { getMockAudioData } = require("../data/mockAudio");
 const { contextLimitExceeded } = require("../errors/contextLimit");
 const { serverDown } = require("../errors/serverDown");
+const { rateLimitExceeded } = require("../errors/rateLimit");
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 // Text to Speech
 router.post("/v1/audio/speech", async (req, res) => {
   then = Date.now();
-  
+
   if (serverDown()) {
     requestCounter.inc({ method: "POST", path: "/v1/audio/speech", status: 500 });
     requestLatency.observe({ method: "POST", path: "/v1/audio/speech", status: 500 }, (Date.now() - then));
@@ -44,6 +45,19 @@ router.post("/v1/audio/speech", async (req, res) => {
         .status(400)
         .json({ error: 'Input must be a string' });
     }
+
+    // Check if rate limit is exceeded
+    const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded(input);
+    if (rate_limit_exceeded) {
+      requestCounter.inc({ method: "POST", path: "/v1/audio/speech", status: 429 });
+      requestLatency.observe({ method: "POST", path: "/v1/audio/speech", status: 429 }, (Date.now() - then));
+      payloadSize.observe({ method: "POST", path: "/v1/audio/speech", status: 429 }, req.socket.bytesRead);
+      return res
+        .status(429)
+        .json({ error: rate_limit_exceeded_reason });
+    }
+
+    // Check if the context limit is exceeded
     if (contextLimitExceeded(input)) {
       requestCounter.inc({ method: "POST", path: "/v1/audio/speech", status: 400 });
       requestLatency.observe({ method: "POST", path: "/v1/audio/speech", status: 400 }, (Date.now() - then));
@@ -97,6 +111,19 @@ router.post("/v1/audio/transcriptions", upload.single('file'), async (req, res) 
         .status(400)
         .json({ error: 'Prompt must be a string' });
     }
+
+    // Check if rate limit is exceeded
+    const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded(prompt);
+    if (rate_limit_exceeded) {
+      requestCounter.inc({ method: "POST", path: "/v1/audio/transcriptions", status: 429 });
+      requestLatency.observe({ method: "POST", path: "/v1/audio/transcriptions", status: 429 }, (Date.now() - then));
+      payloadSize.observe({ method: "POST", path: "/v1/audio/transcriptions", status: 429 }, req.socket.bytesRead);
+      return res
+        .status(429)
+        .json({ error: rate_limit_exceeded_reason });
+    }
+
+    // Check if the context limit is exceeded
     if (contextLimitExceeded(prompt)) {
       requestCounter.inc({ method: "POST", path: "/v1/audio/transcriptions", status: 400 });
       requestLatency.observe({ method: "POST", path: "/v1/audio/transcriptions", status: 400 }, (Date.now() - then));
@@ -188,6 +215,19 @@ router.post("/v1/audio/translations", upload.single('file'), async (req, res) =>
         .status(400)
         .json({ error: 'Prompt must be a string' });
     }
+
+    // Check if rate limit is exceeded
+    const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded(prompt);
+    if (rate_limit_exceeded) {
+      requestCounter.inc({ method: "POST", path: "/v1/audio/translations", status: 429 });
+      requestLatency.observe({ method: "POST", path: "/v1/audio/translations", status: 429 }, (Date.now() - then));
+      payloadSize.observe({ method: "POST", path: "/v1/audio/translations", status: 429 }, req.socket.bytesRead);
+      return res
+        .status(429)
+        .json({ error: rate_limit_exceeded_reason });
+    }
+
+    // Check if the context limit is exceeded
     if (contextLimitExceeded(prompt)) {
       requestCounter.inc({ method: "POST", path: "/v1/audio/translations", status: 400 });
       requestLatency.observe({ method: "POST", path: "/v1/audio/translations", status: 400 }, (Date.now() - then));

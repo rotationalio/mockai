@@ -14,6 +14,10 @@ services:
       - RESPONSE_DELAY_MS=500
       - CONTEXT_LIMIT=40000
       - DOWN_RATE=0
+      - TOKENS_PER_MINUTE = 10
+      - TOKENS_PER_DAY = 100
+      - REQUESTS_PER_MINUTE = 10
+      - REQUESTS_PER_DAY = 100
     volumes:
       - ./data:/app/data:ro
     command: pnpm start

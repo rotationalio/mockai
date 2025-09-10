@@ -1,6 +1,7 @@
 const express = require("express");
 const { contextLimitExceeded } = require("../errors/contextLimit");
 const { serverDown } = require("../errors/serverDown");
+const { rateLimitExceeded } = require("../errors/rateLimit");
 const router = express.Router();
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics")
 
@@ -62,6 +63,17 @@ router.post("/v1/embeddings", (req, res) => {
         }
         // Check if the context limit is exceeded for each element in the array
         for (const i of input) {
+            // Check if rate limit is exceeded
+            const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded(i);
+            if (rate_limit_exceeded) {
+                requestCounter.inc({ method: "POST", path: "/v1/embeddings", status: 429 });
+                requestLatency.observe({ method: "POST", path: "/v1/embeddings", status: 429 }, (Date.now() - then));
+                payloadSize.observe({ method: "POST", path: "/v1/embeddings", status: 429 }, req.socket.bytesRead);
+                return res
+                    .status(429)
+                    .json({ error: rate_limit_exceeded_reason });
+            }
+            // Check if the context limit is exceeded
             if (contextLimitExceeded(i)) {
                 requestCounter.inc({ method: "POST", path: "/v1/embeddings", status: 400 });
                 requestLatency.observe({ method: "POST", path: "/v1/embeddings", status: 400 }, (Date.now() - then));
@@ -74,6 +86,16 @@ router.post("/v1/embeddings", (req, res) => {
     }
     // Check if the input is a string
     else if (typeof input === "string") {
+        // Check if rate limit is exceeded
+        const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded(input);
+        if (rate_limit_exceeded) {
+            requestCounter.inc({ method: "POST", path: "/v1/embeddings", status: 429 });
+            requestLatency.observe({ method: "POST", path: "/v1/embeddings", status: 429 }, (Date.now() - then));
+            payloadSize.observe({ method: "POST", path: "/v1/embeddings", status: 429 }, req.socket.bytesRead);
+            return res
+            .status(429)
+            .json({ error: rate_limit_exceeded_reason });
+        }
         if (contextLimitExceeded(input)) {
             requestCounter.inc({ method: "POST", path: "/v1/embeddings", status: 400 });
             requestLatency.observe({ method: "POST", path: "/v1/embeddings", status: 400 }, (Date.now() - then));

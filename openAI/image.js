@@ -2,6 +2,7 @@ const express = require("express");
 const delay = require("../utils/delay")
 const { contextLimitExceeded } = require("../errors/contextLimit");
 const { serverDown } = require("../errors/serverDown");
+const { rateLimitExceeded } = require("../errors/rateLimit");
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics")
 
 const router = express.Router();
@@ -43,8 +44,22 @@ router.post("/v1/images/generations", async (req, res) => {
       .json({ error: 'Prompt must be a string' });
   }
 
+  // Check if rate limit is exceeded
+  const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded(prompt);
+  if (rate_limit_exceeded) {
+    requestCounter.inc({ method: "POST", path: "/v1/images/generations", status: 429 });
+    requestLatency.observe({ method: "POST", path: "/v1/images/generations", status: 429 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/images/generations", status: 429 }, req.socket.bytesRead);
+    return res
+      .status(429)
+      .json({ error: rate_limit_exceeded_reason });
+  }
+
   // Check if the context limit is exceeded
   if (contextLimitExceeded(prompt)) {
+    requestCounter.inc({ method: "POST", path: "/v1/images/generations", status: 400 });
+    requestLatency.observe({ method: "POST", path: "/v1/images/generations", status: 400 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/images/generations", status: 400 }, req.socket.bytesRead);
     return res
       .status(400)
       .json({ error: 'Context limit exceeded' });
