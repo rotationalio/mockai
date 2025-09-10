@@ -170,12 +170,9 @@ router.post("/v1/audio/translations", upload.single('file'), async (req, res) =>
     }
   }
 
-<<<<<<< HEAD
   requestCounter.inc({ method: "POST", path: "/v1/audio/translations", status: 200 });
   requestLatency.observe({ method: "POST", path: "/v1/audio/translations", status: 200 }, (Date.now() - then));
   payloadSize.observe({ method: "POST", path: "/v1/audio/translations", status: 200 }, req.socket.bytesRead);
-=======
->>>>>>> 5ae624266aa617c7fade414827a39f19750a2aa4
   if (format === "verbose_json") {
     const verboseResponse = {
       text: translation.text,
