@@ -1,4 +1,5 @@
 const express = require("express");
+const { contextLimitExceeded } = require("../errors/context_limit");
 const router = express.Router();
 
 router.post("/v1/embeddings", (req, res) => {
@@ -15,6 +16,12 @@ router.post("/v1/embeddings", (req, res) => {
         return res
             .status(400)
             .json({ error: 'Missing or invalid "model" in request body' });
+    }
+
+    if (contextLimitExceeded(input)) {
+        return res
+            .status(400)
+            .json({ error: 'Context limit exceeded' });
     }
 
     const embeddingArray = [];

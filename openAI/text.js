@@ -2,8 +2,8 @@ const express = require("express");
 const { getRandomContents } = require("../utils/randomContents");
 const { tokenize } = require("../utils/tokenize");
 const delay = require("../utils/delay")
+const { contextLimitExceeded } = require("../errors/context_limit");
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics")
-
 
 const router = express.Router();
 
@@ -48,6 +48,11 @@ router.post("/v1/completions", async (req, res) => {
     requestLatency.observe({ method: "POST", path: "/v1/completions", status: 400 }, (Date.now() - then));
     payloadSize.observe({ method: "POST", path: "/v1/completions", status: 400 }, req.socket.bytesRead);
     return res.status(400).json({ error: 'Invalid "stream" in request body' });
+  }
+
+  // Check if context limit is exceeded
+  if (contextLimitExceeded(prompt)) {
+    return res.status(400).json({ error: 'Context limit exceeded' });
   }
 
   // Get response content

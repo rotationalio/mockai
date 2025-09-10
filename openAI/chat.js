@@ -1,12 +1,15 @@
 const express = require("express");
 const { getRandomContents } = require("../utils/randomContents");
 const { tokenize } = require("../utils/tokenize");
-const delay = require("../utils/delay")
-const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics")
+const delay = require("../utils/delay");
+const { contextLimitExceeded } = require("../errors/context_limit");
+const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 const router = express.Router();
+const contextLimit = parseInt(process.env.CONTEXT_LIMIT) || 4096;
 
 router.post("/v1/chat/completions", async (req, res) => {
+  console.log(contextLimit);
   then = Date.now();  
   const delayHeader = req.headers["x-set-response-delay-ms"]
 
@@ -41,6 +44,11 @@ router.post("/v1/chat/completions", async (req, res) => {
     payloadSize.observe({ method: "POST", path: "/v1/chat/completions", status: 400 }, req.socket.bytesRead);
 
     return res.status(400).json({ error: 'Invalid "stream" in request body' });
+  }
+
+  // Check if context limit is exceeded
+  if (contextLimitExceeded(messages)) {
+    return res.status(400).json({ error: 'Context limit exceeded' });
   }
 
   // Get response content
