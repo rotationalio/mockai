@@ -3,12 +3,21 @@ const { getRandomContents } = require("../utils/randomContents");
 const { tokenize } = require("../utils/tokenize");
 const delay = require("../utils/delay");
 const { contextLimitExceeded } = require("../errors/contextLimit");
+const { serverDown } = require("../errors/serverDown");
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 const router = express.Router();
 
 router.post("/v1/chat/completions", async (req, res) => {
   then = Date.now();  
+
+  if (serverDown()) {
+    requestCounter.inc({ method: "POST", path: "/v1/chat/completions", status: 500 });
+    requestLatency.observe({ method: "POST", path: "/v1/chat/completions", status: 500 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/chat/completions", status: 500 }, req.socket.bytesRead);
+    return res.status(500).json({ error: 'Server error' });
+  }
+
   const delayHeader = req.headers["x-set-response-delay-ms"]
 
   // delay is header is present. Else fallback to environment Variable

@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const delay = require("../utils/delay");
+const { serverDown } = require("../errors/serverDown");
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 // Configure multer for file upload
@@ -28,6 +29,14 @@ function generateFileId() {
 // Create an upload
 router.post("/v1/uploads", async (req, res) => {
     then = Date.now();
+
+    if (serverDown()) {
+        requestCounter.inc({ method: "POST", path: "/v1/uploads", status: 500 });
+        requestLatency.observe({ method: "POST", path: "/v1/uploads", status: 500 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/uploads", status: 500 }, req.socket.bytesRead);
+        return res.status(500).json({ error: 'Server error' });
+    }
+
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -91,6 +100,14 @@ router.post("/v1/uploads", async (req, res) => {
 // Add upload part
 router.post("/v1/uploads/:upload_id/parts", upload.single("data"), async (req, res) => {
     then = Date.now();
+
+    if (serverDown()) {
+        requestCounter.inc({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 500 });
+        requestLatency.observe({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 500 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 500 }, req.socket.bytesRead);
+        return res.status(500).json({ error: 'Server error' });
+    }
+
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -196,6 +213,14 @@ router.post("/v1/uploads/:upload_id/parts", upload.single("data"), async (req, r
 // Complete upload
 router.post("/v1/uploads/:upload_id/complete", async (req, res) => {
     then = Date.now();
+
+    if (serverDown()) {
+        requestCounter.inc({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 500 });
+        requestLatency.observe({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 500 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 500 }, req.socket.bytesRead);
+        return res.status(500).json({ error: 'Server error' });
+    }
+
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -306,6 +331,14 @@ router.post("/v1/uploads/:upload_id/complete", async (req, res) => {
 // Cancel upload
 router.post("/v1/uploads/:upload_id/cancel", async (req, res) => {
     then = Date.now();
+
+    if (serverDown()) {
+        requestCounter.inc({ method: "POST", path: "/v1/uploads/:upload_id/cancel", status: 500 });
+        requestLatency.observe({ method: "POST", path: "/v1/uploads/:upload_id/cancel", status: 500 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/uploads/:upload_id/cancel", status: 500 }, req.socket.bytesRead);
+        return res.status(500).json({ error: 'Server error' });
+    }
+
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 

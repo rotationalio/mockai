@@ -1,11 +1,20 @@
 const express = require("express");
 const router = express.Router();
 const delay = require("../utils/delay");
+const { serverDown } = require("../errors/serverDown");
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 // List models
 router.get("/v1/models", async (req, res) => {
   then = Date.now();
+
+  if (serverDown()) {
+    requestCounter.inc({ method: "GET", path: "/v1/models", status: 500 });
+    requestLatency.observe({ method: "GET", path: "/v1/models", status: 500 }, (Date.now() - then));
+    payloadSize.observe({ method: "GET", path: "/v1/models", status: 500 }, req.socket.bytesRead);
+    return res.status(500).json({ error: 'Server error' });
+  }
+
   const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
   await delay(delayTime);
   
@@ -54,6 +63,14 @@ router.get("/v1/models", async (req, res) => {
 // Retrieve model
 router.get("/v1/models/:model", async (req, res) => {
   then = Date.now();
+
+  if (serverDown()) {
+    requestCounter.inc({ method: "GET", path: "/v1/models/:model", status: 500 });
+    requestLatency.observe({ method: "GET", path: "/v1/models/:model", status: 500 }, (Date.now() - then));
+    payloadSize.observe({ method: "GET", path: "/v1/models/:model", status: 500 }, req.socket.bytesRead);
+    return res.status(500).json({ error: 'Server error' });
+  }
+
   const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
   await delay(delayTime);
   
