@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const delay = require("../utils/delay");
+const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 // Configure multer for file upload
 const storage = multer.memoryStorage();
@@ -26,6 +27,7 @@ function generateFileId() {
 
 // Create an upload
 router.post("/v1/uploads", async (req, res) => {
+    then = Date.now();
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -33,6 +35,9 @@ router.post("/v1/uploads", async (req, res) => {
 
     // Validate required fields
     if (!filename || !purpose || !bytes || !mime_type) {
+        requestCounter.inc({ method: "POST", path: "/v1/uploads", status: 400 });
+        requestLatency.observe({ method: "POST", path: "/v1/uploads", status: 400 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/uploads", status: 400 }, req.socket.bytesRead);
         return res.status(400).json({
             error: {
                 message: "Missing required fields",
@@ -45,6 +50,9 @@ router.post("/v1/uploads", async (req, res) => {
 
     // Validate bytes (max 8GB)
     if (bytes > 8 * 1024 * 1024 * 1024) {
+        requestCounter.inc({ method: "POST", path: "/v1/uploads", status: 400 });
+        requestLatency.observe({ method: "POST", path: "/v1/uploads", status: 400 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/uploads", status: 400 }, req.socket.bytesRead);
         return res.status(400).json({
             error: {
                 message: "Upload size cannot exceed 8GB",
@@ -74,11 +82,15 @@ router.post("/v1/uploads", async (req, res) => {
         totalUploadedBytes: 0
     });
 
+    requestCounter.inc({ method: "POST", path: "/v1/uploads", status: 200 });
+    requestLatency.observe({ method: "POST", path: "/v1/uploads", status: 200 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/uploads", status: 200 }, req.socket.bytesRead);
     res.status(200).json(upload);
 });
 
 // Add upload part
 router.post("/v1/uploads/:upload_id/parts", upload.single("data"), async (req, res) => {
+    then = Date.now();
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -86,6 +98,9 @@ router.post("/v1/uploads/:upload_id/parts", upload.single("data"), async (req, r
     const upload = uploads.get(uploadId);
 
     if (!upload) {
+        requestCounter.inc({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 404 });
+        requestLatency.observe({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 404 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 404 }, req.socket.bytesRead);
         return res.status(404).json({
             error: {
                 message: "Upload not found",
@@ -97,6 +112,9 @@ router.post("/v1/uploads/:upload_id/parts", upload.single("data"), async (req, r
     }
 
     if (upload.status !== "pending") {
+        requestCounter.inc({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 400 });
+        requestLatency.observe({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 400 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 400 }, req.socket.bytesRead);
         return res.status(400).json({
             error: {
                 message: `Upload is ${upload.status}, cannot add parts`,
@@ -108,6 +126,9 @@ router.post("/v1/uploads/:upload_id/parts", upload.single("data"), async (req, r
     }
 
     if (!req.file) {
+        requestCounter.inc({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 400 });
+        requestLatency.observe({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 400 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 400 }, req.socket.bytesRead);
         return res.status(400).json({
             error: {
                 message: "No data provided",
@@ -120,6 +141,9 @@ router.post("/v1/uploads/:upload_id/parts", upload.single("data"), async (req, r
 
     // Check part size (max 64MB)
     if (req.file.size > 64 * 1024 * 1024) {
+        requestCounter.inc({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 400 });
+        requestLatency.observe({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 400 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 400 }, req.socket.bytesRead);
         return res.status(400).json({
             error: {
                 message: "Part size cannot exceed 64MB",
@@ -132,6 +156,9 @@ router.post("/v1/uploads/:upload_id/parts", upload.single("data"), async (req, r
 
     // Check if total uploaded bytes would exceed the specified size
     if (upload.totalUploadedBytes + req.file.size > upload.bytes) {
+        requestCounter.inc({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 400 });
+        requestLatency.observe({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 400 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 400 }, req.socket.bytesRead);
         return res.status(400).json({
             error: {
                 message: "Total uploaded bytes would exceed specified size",
@@ -159,11 +186,16 @@ router.post("/v1/uploads/:upload_id/parts", upload.single("data"), async (req, r
     upload.totalUploadedBytes += req.file.size;
 
     uploads.set(uploadId, upload);
+
+    requestCounter.inc({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 200 });
+    requestLatency.observe({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 200 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/uploads/:upload_id/parts", status: 200 }, req.socket.bytesRead);
     res.status(200).json(part);
 });
 
 // Complete upload
 router.post("/v1/uploads/:upload_id/complete", async (req, res) => {
+    then = Date.now();
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -172,6 +204,9 @@ router.post("/v1/uploads/:upload_id/complete", async (req, res) => {
     const upload = uploads.get(uploadId);
 
     if (!upload) {
+        requestCounter.inc({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 404 });
+        requestLatency.observe({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 404 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 404 }, req.socket.bytesRead);
         return res.status(404).json({
             error: {
                 message: "Upload not found",
@@ -183,6 +218,9 @@ router.post("/v1/uploads/:upload_id/complete", async (req, res) => {
     }
 
     if (upload.status !== "pending") {
+        requestCounter.inc({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 400 });
+        requestLatency.observe({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 400 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 400 }, req.socket.bytesRead);
         return res.status(400).json({
             error: {
                 message: `Upload is ${upload.status}, cannot complete`,
@@ -194,6 +232,9 @@ router.post("/v1/uploads/:upload_id/complete", async (req, res) => {
     }
 
     if (!part_ids || !Array.isArray(part_ids) || part_ids.length === 0) {
+        requestCounter.inc({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 400 });
+        requestLatency.observe({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 400 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 400 }, req.socket.bytesRead);
         return res.status(400).json({
             error: {
                 message: "part_ids must be a non-empty array",
@@ -207,6 +248,9 @@ router.post("/v1/uploads/:upload_id/complete", async (req, res) => {
     // Verify all parts exist
     for (const partId of part_ids) {
         if (!upload.parts.has(partId)) {
+            requestCounter.inc({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 400 });
+            requestLatency.observe({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 400 }, (Date.now() - then));
+            payloadSize.observe({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 400 }, req.socket.bytesRead);
             return res.status(400).json({
                 error: {
                     message: `Part ${partId} not found`,
@@ -220,6 +264,9 @@ router.post("/v1/uploads/:upload_id/complete", async (req, res) => {
 
     // Verify total bytes match
     if (upload.totalUploadedBytes !== upload.bytes) {
+        requestCounter.inc({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 400 });
+        requestLatency.observe({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 400 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 400 }, req.socket.bytesRead);
         return res.status(400).json({
             error: {
                 message: "Total uploaded bytes does not match specified size",
@@ -246,6 +293,9 @@ router.post("/v1/uploads/:upload_id/complete", async (req, res) => {
     upload.file = file;
     uploads.set(uploadId, upload);
 
+    requestCounter.inc({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 200 });
+    requestLatency.observe({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 200 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/uploads/:upload_id/complete", status: 200 }, req.socket.bytesRead);
     res.status(200).json({
         ...upload,
         parts: undefined,
@@ -255,6 +305,7 @@ router.post("/v1/uploads/:upload_id/complete", async (req, res) => {
 
 // Cancel upload
 router.post("/v1/uploads/:upload_id/cancel", async (req, res) => {
+    then = Date.now();
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -262,6 +313,9 @@ router.post("/v1/uploads/:upload_id/cancel", async (req, res) => {
     const upload = uploads.get(uploadId);
 
     if (!upload) {
+        requestCounter.inc({ method: "POST", path: "/v1/uploads/:upload_id/cancel", status: 404 });
+        requestLatency.observe({ method: "POST", path: "/v1/uploads/:upload_id/cancel", status: 404 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/uploads/:upload_id/cancel", status: 404 }, req.socket.bytesRead);
         return res.status(404).json({
             error: {
                 message: "Upload not found",
@@ -273,6 +327,9 @@ router.post("/v1/uploads/:upload_id/cancel", async (req, res) => {
     }
 
     if (upload.status !== "pending") {
+        requestCounter.inc({ method: "POST", path: "/v1/uploads/:upload_id/cancel", status: 400 });
+        requestLatency.observe({ method: "POST", path: "/v1/uploads/:upload_id/cancel", status: 400 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/uploads/:upload_id/cancel", status: 400 }, req.socket.bytesRead);
         return res.status(400).json({
             error: {
                 message: `Upload is ${upload.status}, cannot cancel`,
@@ -286,6 +343,9 @@ router.post("/v1/uploads/:upload_id/cancel", async (req, res) => {
     upload.status = "cancelled";
     uploads.set(uploadId, upload);
 
+    requestCounter.inc({ method: "POST", path: "/v1/uploads/:upload_id/cancel", status: 200 });
+    requestLatency.observe({ method: "POST", path: "/v1/uploads/:upload_id/cancel", status: 200 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/uploads/:upload_id/cancel", status: 200 }, req.socket.bytesRead);
     res.status(200).json({
         ...upload,
         parts: undefined,

@@ -9,6 +9,7 @@ const { requestCounter, requestLatency, payloadSize } = require("../utils/metric
 
 // Text to Speech
 router.post("/v1/audio/speech", async (req, res) => {
+  then = Date.now();
   const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
   await delay(delayTime);
 
@@ -50,11 +51,15 @@ router.post("/v1/audio/speech", async (req, res) => {
       .json({ error: 'Input must be provided' });
   }
 
+  requestCounter.inc({ method: "POST", path: "/v1/audio/speech", status: 200 });
+  requestLatency.observe({ method: "POST", path: "/v1/audio/speech", status: 200 }, (Date.now() - then));
+  payloadSize.observe({ method: "POST", path: "/v1/audio/speech", status: 200 }, req.socket.bytesRead);
   res.send(mockAudioData);
 });
 
 // Speech to Text (Transcription)
 router.post("/v1/audio/transcriptions", upload.single('file'), async (req, res) => {
+  then = Date.now();
   const delayTime = parseInt(req.get('x-set-response-delay-ms')) || 0;
   await delay(delayTime);
 
@@ -86,6 +91,9 @@ router.post("/v1/audio/transcriptions", upload.single('file'), async (req, res) 
     text: "This is a mock transcription of the audio file. The quick brown fox jumps over the lazy dog.",
   };
 
+  requestCounter.inc({ method: "POST", path: "/v1/audio/transcriptions", status: 200 });
+  requestLatency.observe({ method: "POST", path: "/v1/audio/transcriptions", status: 200 }, (Date.now() - then));
+  payloadSize.observe({ method: "POST", path: "/v1/audio/transcriptions", status: 200 }, req.socket.bytesRead);
   if (format === "verbose_json") {
     const verboseResponse = {
       text: transcription.text,
@@ -127,6 +135,7 @@ router.post("/v1/audio/transcriptions", upload.single('file'), async (req, res) 
 
 // Audio Translation
 router.post("/v1/audio/translations", upload.single('file'), async (req, res) => {
+  then = Date.now();
   const delayTime = parseInt(req.get('x-set-response-delay-ms')) || 0;
   await delay(delayTime);
 
@@ -158,6 +167,9 @@ router.post("/v1/audio/translations", upload.single('file'), async (req, res) =>
     }
   }
 
+  requestCounter.inc({ method: "POST", path: "/v1/audio/translations", status: 200 });
+  requestLatency.observe({ method: "POST", path: "/v1/audio/translations", status: 200 }, (Date.now() - then));
+  payloadSize.observe({ method: "POST", path: "/v1/audio/translations", status: 200 }, req.socket.bytesRead);
   if (format === "verbose_json") {
     const verboseResponse = {
       text: translation.text,

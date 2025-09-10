@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const delay = require("../utils/delay");
+const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 // Mock batch data store
 let batches = new Map();
@@ -42,12 +43,16 @@ function generateMockEvents(batchId, status) {
 
 // Create a batch processing job
 router.post("/v1/batch", async (req, res) => {
+    then = Date.now();
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
     const { operations } = req.body;
 
     if (!operations || !Array.isArray(operations) || operations.length === 0) {
+        requestCounter.inc({ method: "POST", path: "/v1/batch", status: 400 });
+        requestLatency.observe({ method: "POST", path: "/v1/batch", status: 400 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/batch", status: 400 }, req.socket.bytesRead);
         return res.status(400).json({
             error: {
                 message: "operations array is required and must not be empty",
@@ -61,6 +66,9 @@ router.post("/v1/batch", async (req, res) => {
     // Validate each operation
     for (const [index, operation] of operations.entries()) {
         if (!operation.parameters || !operation.operation) {
+            requestCounter.inc({ method: "POST", path: "/v1/batch", status: 400 });
+            requestLatency.observe({ method: "POST", path: "/v1/batch", status: 400 }, (Date.now() - then));
+            payloadSize.observe({ method: "POST", path: "/v1/batch", status: 400 }, req.socket.bytesRead);
             return res.status(400).json({
                 error: {
                     message: `Invalid operation at index ${index}`,
@@ -131,16 +139,23 @@ router.post("/v1/batch", async (req, res) => {
         }
     }, 5000);
 
+    requestCounter.inc({ method: "POST", path: "/v1/batch", status: 200 });
+    requestLatency.observe({ method: "POST", path: "/v1/batch", status: 200 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/batch", status: 200 }, req.socket.bytesRead);
     res.status(200).json(batch);
 });
 
 // Get batch status
 router.get("/v1/batch/:batch_id", async (req, res) => {
+    then = Date.now();
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
     const batch = batches.get(req.params.batch_id);
     if (!batch) {
+        requestCounter.inc({ method: "GET", path: "/v1/batch/:batch_id", status: 404 });
+        requestLatency.observe({ method: "GET", path: "/v1/batch/:batch_id", status: 404 }, (Date.now() - then));
+        payloadSize.observe({ method: "GET", path: "/v1/batch/:batch_id", status: 404 }, req.socket.bytesRead);
         return res.status(404).json({
             error: {
                 message: "Batch not found",
@@ -151,16 +166,23 @@ router.get("/v1/batch/:batch_id", async (req, res) => {
         });
     }
 
+    requestCounter.inc({ method: "GET", path: "/v1/batch/:batch_id", status: 200 });
+    requestLatency.observe({ method: "GET", path: "/v1/batch/:batch_id", status: 200 }, (Date.now() - then));
+    payloadSize.observe({ method: "GET", path: "/v1/batch/:batch_id", status: 200 }, req.socket.bytesRead);
     res.status(200).json(batch);
 });
 
 // Cancel batch
 router.post("/v1/batch/:batch_id/cancel", async (req, res) => {
+    then = Date.now();
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
     const batch = batches.get(req.params.batch_id);
     if (!batch) {
+        requestCounter.inc({ method: "POST", path: "/v1/batch/:batch_id/cancel", status: 404 });
+        requestLatency.observe({ method: "POST", path: "/v1/batch/:batch_id/cancel", status: 404 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/batch/:batch_id/cancel", status: 404 }, req.socket.bytesRead);
         return res.status(404).json({
             error: {
                 message: "Batch not found",
@@ -172,6 +194,9 @@ router.post("/v1/batch/:batch_id/cancel", async (req, res) => {
     }
 
     if (batch.status !== "running") {
+        requestCounter.inc({ method: "POST", path: "/v1/batch/:batch_id/cancel", status: 400 });
+        requestLatency.observe({ method: "POST", path: "/v1/batch/:batch_id/cancel", status: 400 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/batch/:batch_id/cancel", status: 400 }, req.socket.bytesRead);
         return res.status(400).json({
             error: {
                 message: `Batch is ${batch.status}, cannot be cancelled`,
@@ -212,17 +237,24 @@ router.post("/v1/batch/:batch_id/cancel", async (req, res) => {
     });
     batchEvents.set(req.params.batch_id, events);
 
+    requestCounter.inc({ method: "POST", path: "/v1/batch/:batch_id/cancel", status: 200 });
+    requestLatency.observe({ method: "POST", path: "/v1/batch/:batch_id/cancel", status: 200 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/batch/:batch_id/cancel", status: 200 }, req.socket.bytesRead);
     res.status(200).json(batch);
 });
 
 // Get batch events
 router.get("/v1/batch/:batch_id/events", async (req, res) => {
+    then = Date.now();
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
     const { limit = 20, after } = req.query;
 
     if (!batches.has(req.params.batch_id)) {
+        requestCounter.inc({ method: "GET", path: "/v1/batch/:batch_id/events", status: 404 });
+        requestLatency.observe({ method: "GET", path: "/v1/batch/:batch_id/events", status: 404 }, (Date.now() - then));
+        payloadSize.observe({ method: "GET", path: "/v1/batch/:batch_id/events", status: 404 }, req.socket.bytesRead);
         return res.status(404).json({
             error: {
                 message: "Batch not found",
@@ -244,6 +276,9 @@ router.get("/v1/batch/:batch_id/events", async (req, res) => {
 
     events = events.slice(0, parseInt(limit));
 
+    requestCounter.inc({ method: "GET", path: "/v1/batch/:batch_id/events", status: 200 });
+    requestLatency.observe({ method: "GET", path: "/v1/batch/:batch_id/events", status: 200 }, (Date.now() - then));
+    payloadSize.observe({ method: "GET", path: "/v1/batch/:batch_id/events", status: 200 }, req.socket.bytesRead);
     res.status(200).json({
         object: "list",
         data: events,
