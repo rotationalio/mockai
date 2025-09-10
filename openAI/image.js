@@ -1,12 +1,21 @@
 const express = require("express");
 const delay = require("../utils/delay")
 const { contextLimitExceeded } = require("../errors/contextLimit");
+const { serverDown } = require("../errors/serverDown");
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics")
 
 const router = express.Router();
 
 router.post("/v1/images/generations", async (req, res) => {
   then = Date.now();
+
+  if (serverDown()) {
+    requestCounter.inc({ method: "POST", path: "/v1/images/generations", status: 500 });
+    requestLatency.observe({ method: "POST", path: "/v1/images/generations", status: 500 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/images/generations", status: 500 }, req.socket.bytesRead);
+    return res.status(500).json({ error: 'Server error' });
+  }
+
   const delayHeader = req.headers["x-set-response-delay-ms"]
 
   let delayTime = parseInt(delayHeader) || parseInt(process.env.RESPONSE_DELAY_MS) || 0

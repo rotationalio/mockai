@@ -4,6 +4,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs").promises;
 const delay = require("../utils/delay");
+const { serverDown } = require("../errors/serverDown");
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 // Configure multer for file upload
@@ -29,6 +30,14 @@ function calculateBytes(data) {
 // List files
 router.get("/v1/files", async (req, res) => {
     then = Date.now();
+
+    if (serverDown()) {
+        requestCounter.inc({ method: "GET", path: "/v1/files", status: 500 });
+        requestLatency.observe({ method: "GET", path: "/v1/files", status: 500 }, (Date.now() - then));
+        payloadSize.observe({ method: "GET", path: "/v1/files", status: 500 }, req.socket.bytesRead);
+        return res.status(500).json({ error: 'Server error' });
+    }
+
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -52,6 +61,14 @@ router.get("/v1/files", async (req, res) => {
 // Upload a file
 router.post("/v1/files", upload.single("file"), async (req, res) => {
     then = Date.now();
+
+    if (serverDown()) {
+        requestCounter.inc({ method: "POST", path: "/v1/files", status: 500 });
+        requestLatency.observe({ method: "POST", path: "/v1/files", status: 500 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/files", status: 500 }, req.socket.bytesRead);
+        return res.status(500).json({ error: 'Server error' });
+    }
+
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -112,6 +129,14 @@ router.post("/v1/files", upload.single("file"), async (req, res) => {
 // Delete a file
 router.delete("/v1/files/:file_id", async (req, res) => {
     then = Date.now();
+
+    if (serverDown()) {
+        requestCounter.inc({ method: "DELETE", path: "/v1/files/:file_id", status: 500 });
+        requestLatency.observe({ method: "DELETE", path: "/v1/files/:file_id", status: 500 }, (Date.now() - then));
+        payloadSize.observe({ method: "DELETE", path: "/v1/files/:file_id", status: 500 }, req.socket.bytesRead);
+        return res.status(500).json({ error: 'Server error' });
+    }
+
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -147,6 +172,14 @@ router.delete("/v1/files/:file_id", async (req, res) => {
 // Retrieve file information
 router.get("/v1/files/:file_id", async (req, res) => {
     then = Date.now();
+
+    if (serverDown()) {
+        requestCounter.inc({ method: "GET", path: "/v1/files/:file_id", status: 500 });
+        requestLatency.observe({ method: "GET", path: "/v1/files/:file_id", status: 500 }, (Date.now() - then));
+        payloadSize.observe({ method: "GET", path: "/v1/files/:file_id", status: 500 }, req.socket.bytesRead);
+        return res.status(500).json({ error: 'Server error' });
+    }
+
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -178,6 +211,14 @@ router.get("/v1/files/:file_id", async (req, res) => {
 // Retrieve file content
 router.get("/v1/files/:file_id/content", async (req, res) => {
     then = Date.now();
+
+    if (serverDown()) {
+        requestCounter.inc({ method: "GET", path: "/v1/files/:file_id/content", status: 500 });
+        requestLatency.observe({ method: "GET", path: "/v1/files/:file_id/content", status: 500 }, (Date.now() - then));
+        payloadSize.observe({ method: "GET", path: "/v1/files/:file_id/content", status: 500 }, req.socket.bytesRead);
+        return res.status(500).json({ error: 'Server error' });
+    }
+
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
