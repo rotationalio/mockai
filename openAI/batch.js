@@ -3,7 +3,10 @@ const router = express.Router();
 const delay = require("../utils/delay");
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 const { serverDown } = require("../errors/serverDown");
+<<<<<<< HEAD
 const { rateLimitExceeded } = require("../errors/rateLimit");
+=======
+>>>>>>> 573620f1955525f28f4e7aac04a605844f3fb4fe
 
 // Mock batch data store
 let batches = new Map();
@@ -54,6 +57,7 @@ router.post("/v1/batch", async (req, res) => {
         return res.status(500).json({ error: 'Server error' });
     }
 
+<<<<<<< HEAD
     // Check if rate limit is exceeded
     const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded();
     if (rate_limit_exceeded) {
@@ -63,6 +67,8 @@ router.post("/v1/batch", async (req, res) => {
         return res.status(429).json({ error: rate_limit_exceeded_reason });
     }
 
+=======
+>>>>>>> 573620f1955525f28f4e7aac04a605844f3fb4fe
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -175,6 +181,7 @@ router.get("/v1/batch/:batch_id", async (req, res) => {
         return res.status(500).json({ error: 'Server error' });
     }
 
+<<<<<<< HEAD
     // Check if rate limit is exceeded
     const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded();
     if (rate_limit_exceeded) {
@@ -184,6 +191,8 @@ router.get("/v1/batch/:batch_id", async (req, res) => {
         return res.status(429).json({ error: rate_limit_exceeded_reason });
     }
 
+=======
+>>>>>>> 573620f1955525f28f4e7aac04a605844f3fb4fe
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -219,6 +228,7 @@ router.post("/v1/batch/:batch_id/cancel", async (req, res) => {
         return res.status(500).json({ error: 'Server error' });
     }
 
+<<<<<<< HEAD
     // Check if rate limit is exceeded
     const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded();
     if (rate_limit_exceeded) {
@@ -228,6 +238,8 @@ router.post("/v1/batch/:batch_id/cancel", async (req, res) => {
         return res.status(429).json({ error: rate_limit_exceeded_reason });
     }
 
+=======
+>>>>>>> 573620f1955525f28f4e7aac04a605844f3fb4fe
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -307,6 +319,7 @@ router.get("/v1/batch/:batch_id/events", async (req, res) => {
         return res.status(500).json({ error: 'Server error' });
     }
 
+<<<<<<< HEAD
     // Check if rate limit is exceeded
     const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded();
     if (rate_limit_exceeded) {
@@ -316,6 +329,8 @@ router.get("/v1/batch/:batch_id/events", async (req, res) => {
         return res.status(429).json({ error: rate_limit_exceeded_reason });
     }
 
+=======
+>>>>>>> 573620f1955525f28f4e7aac04a605844f3fb4fe
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
