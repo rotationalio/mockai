@@ -4,7 +4,11 @@ const { tokenize } = require("../utils/tokenize");
 function contextLimitExceeded(content) {
 
     // Get the context limit from the environment variable
+<<<<<<< HEAD
     const contextLimit = (parseInt(process.env.CONTEXT_LIMIT) || 4096);
+=======
+    const contextLimit = (parseInt(process.env.CONTEXT_LIMIT) || 40000);
+>>>>>>> 5ae624266aa617c7fade414827a39f19750a2aa4
 
     // Disable context limit errors
     if (contextLimit === 0) {

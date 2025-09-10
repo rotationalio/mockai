@@ -12,7 +12,11 @@ services:
       - MOCK_FILE_PATH=data/contents.txt
       - MOCK_FILE_SEPARATOR="@@@@"
       - RESPONSE_DELAY_MS=500
+<<<<<<< HEAD
       - CONTEXT_LIMIT=5
+=======
+      - CONTEXT_LIMIT=40000
+>>>>>>> 5ae624266aa617c7fade414827a39f19750a2aa4
     volumes:
       - ./data:/app/data:ro
     command: pnpm start
