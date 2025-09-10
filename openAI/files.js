@@ -4,6 +4,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs").promises;
 const delay = require("../utils/delay");
+const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 // Configure multer for file upload
 const storage = multer.memoryStorage();
@@ -27,6 +28,7 @@ function calculateBytes(data) {
 
 // List files
 router.get("/v1/files", async (req, res) => {
+    then = Date.now();
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -37,6 +39,9 @@ router.get("/v1/files", async (req, res) => {
         filesList = filesList.filter(file => file.purpose === purpose);
     }
 
+    requestCounter.inc({ method: "GET", path: "/v1/files", status: 200 });
+    requestLatency.observe({ method: "GET", path: "/v1/files", status: 200 }, (Date.now() - then));
+    payloadSize.observe({ method: "GET", path: "/v1/files", status: 200 }, req.socket.bytesRead);
     res.status(200).json({
         object: "list",
         data: filesList,
@@ -46,10 +51,14 @@ router.get("/v1/files", async (req, res) => {
 
 // Upload a file
 router.post("/v1/files", upload.single("file"), async (req, res) => {
+    then = Date.now();
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
     if (!req.file) {
+        requestCounter.inc({ method: "POST", path: "/v1/files", status: 400 });
+        requestLatency.observe({ method: "POST", path: "/v1/files", status: 400 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/files", status: 400 }, req.socket.bytesRead);
         return res.status(400).json({
             error: {
                 message: "No file provided",
@@ -62,6 +71,9 @@ router.post("/v1/files", upload.single("file"), async (req, res) => {
 
     const purpose = req.body.purpose;
     if (!purpose) {
+        requestCounter.inc({ method: "POST", path: "/v1/files", status: 400 });
+        requestLatency.observe({ method: "POST", path: "/v1/files", status: 400 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/files", status: 400 }, req.socket.bytesRead);
         return res.status(400).json({
             error: {
                 message: "Purpose is required",
@@ -91,11 +103,15 @@ router.post("/v1/files", upload.single("file"), async (req, res) => {
     });
 
     // Don't send the content in the response
+    requestCounter.inc({ method: "POST", path: "/v1/files", status: 200 });
+    requestLatency.observe({ method: "POST", path: "/v1/files", status: 200 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/files", status: 200 }, req.socket.bytesRead);
     res.status(200).json(file);
 });
 
 // Delete a file
 router.delete("/v1/files/:file_id", async (req, res) => {
+    then = Date.now();
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -103,6 +119,9 @@ router.delete("/v1/files/:file_id", async (req, res) => {
     const file = files.get(fileId);
 
     if (!file) {
+        requestCounter.inc({ method: "DELETE", path: "/v1/files/:file_id", status: 404 });
+        requestLatency.observe({ method: "DELETE", path: "/v1/files/:file_id", status: 404 }, (Date.now() - then));
+        payloadSize.observe({ method: "DELETE", path: "/v1/files/:file_id", status: 404 }, req.socket.bytesRead);
         return res.status(404).json({
             error: {
                 message: "No such file",
@@ -115,6 +134,9 @@ router.delete("/v1/files/:file_id", async (req, res) => {
 
     files.delete(fileId);
 
+    requestCounter.inc({ method: "DELETE", path: "/v1/files/:file_id", status: 200 });
+    requestLatency.observe({ method: "DELETE", path: "/v1/files/:file_id", status: 200 }, (Date.now() - then));
+    payloadSize.observe({ method: "DELETE", path: "/v1/files/:file_id", status: 200 }, req.socket.bytesRead);
     res.status(200).json({
         id: fileId,
         object: "file",
@@ -124,6 +146,7 @@ router.delete("/v1/files/:file_id", async (req, res) => {
 
 // Retrieve file information
 router.get("/v1/files/:file_id", async (req, res) => {
+    then = Date.now();
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -131,6 +154,9 @@ router.get("/v1/files/:file_id", async (req, res) => {
     const file = files.get(fileId);
 
     if (!file) {
+        requestCounter.inc({ method: "GET", path: "/v1/files/:file_id", status: 404 });
+        requestLatency.observe({ method: "GET", path: "/v1/files/:file_id", status: 404 }, (Date.now() - then));
+        payloadSize.observe({ method: "GET", path: "/v1/files/:file_id", status: 404 }, req.socket.bytesRead);
         return res.status(404).json({
             error: {
                 message: "No such file",
@@ -143,11 +169,15 @@ router.get("/v1/files/:file_id", async (req, res) => {
 
     // Don't send the content in the response
     const { content, ...fileInfo } = file;
+    requestCounter.inc({ method: "GET", path: "/v1/files/:file_id", status: 200 });
+    requestLatency.observe({ method: "GET", path: "/v1/files/:file_id", status: 200 }, (Date.now() - then));
+    payloadSize.observe({ method: "GET", path: "/v1/files/:file_id", status: 200 }, req.socket.bytesRead);
     res.status(200).json(fileInfo);
 });
 
 // Retrieve file content
 router.get("/v1/files/:file_id/content", async (req, res) => {
+    then = Date.now();
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -155,6 +185,9 @@ router.get("/v1/files/:file_id/content", async (req, res) => {
     const file = files.get(fileId);
 
     if (!file) {
+        requestCounter.inc({ method: "GET", path: "/v1/files/:file_id/content", status: 404 });
+        requestLatency.observe({ method: "GET", path: "/v1/files/:file_id/content", status: 404 }, (Date.now() - then));
+        payloadSize.observe({ method: "GET", path: "/v1/files/:file_id/content", status: 404 }, req.socket.bytesRead);
         return res.status(404).json({
             error: {
                 message: "No such file",
@@ -169,6 +202,9 @@ router.get("/v1/files/:file_id/content", async (req, res) => {
     res.setHeader('Content-Type', 'application/octet-stream');
     res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
     
+    requestCounter.inc({ method: "GET", path: "/v1/files/:file_id/content", status: 200 });
+    requestLatency.observe({ method: "GET", path: "/v1/files/:file_id/content", status: 200 }, (Date.now() - then));
+    payloadSize.observe({ method: "GET", path: "/v1/files/:file_id/content", status: 200 }, req.socket.bytesRead);
     // Send the file content
     res.send(file.content);
 });

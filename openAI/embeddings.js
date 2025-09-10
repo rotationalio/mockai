@@ -4,6 +4,7 @@ const router = express.Router();
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics")
 
 router.post("/v1/embeddings", (req, res) => {
+    then = Date.now();
     const {
         model,
         input
@@ -103,6 +104,9 @@ router.post("/v1/embeddings", (req, res) => {
             total_tokens: 5
         }
     };
+    requestCounter.inc({ method: "POST", path: "/v1/embeddings", status: 200 });
+    requestLatency.observe({ method: "POST", path: "/v1/embeddings", status: 200 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/embeddings", status: 200 }, req.socket.bytesRead);
     res.json(response);
 });
 

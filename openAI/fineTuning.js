@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const delay = require("../utils/delay");
+const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 // Mock fine-tuning job data store
 let jobs = new Map();
@@ -42,12 +43,16 @@ function generateMockEvents(jobId, status) {
 
 // Create a fine-tuning job
 router.post("/v1/fine_tuning/jobs", async (req, res) => {
+    then = Date.now();
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
     const { model, training_file, hyperparameters, suffix } = req.body;
 
     if (!model || !training_file) {
+        requestCounter.inc({ method: "POST", path: "/v1/fine_tuning/jobs", status: 400 });
+        requestLatency.observe({ method: "POST", path: "/v1/fine_tuning/jobs", status: 400 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/fine_tuning/jobs", status: 400 }, req.socket.bytesRead);
         return res.status(400).json({
             error: {
                 message: "model and training_file are required",
@@ -80,11 +85,15 @@ router.post("/v1/fine_tuning/jobs", async (req, res) => {
     jobs.set(jobId, job);
     events.set(jobId, generateMockEvents(jobId, "running"));
 
+    requestCounter.inc({ method: "POST", path: "/v1/fine_tuning/jobs", status: 200 });
+    requestLatency.observe({ method: "POST", path: "/v1/fine_tuning/jobs", status: 200 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/fine_tuning/jobs", status: 200 }, req.socket.bytesRead);
     res.status(200).json(job);
 });
 
 // List fine-tuning jobs
 router.get("/v1/fine_tuning/jobs", async (req, res) => {
+    then = Date.now();
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -104,6 +113,9 @@ router.get("/v1/fine_tuning/jobs", async (req, res) => {
 
     jobsList = jobsList.slice(0, parseInt(limit));
 
+    requestCounter.inc({ method: "GET", path: "/v1/fine_tuning/jobs", status: 200 });
+    requestLatency.observe({ method: "GET", path: "/v1/fine_tuning/jobs", status: 200 }, (Date.now() - then));
+    payloadSize.observe({ method: "GET", path: "/v1/fine_tuning/jobs", status: 200 }, req.socket.bytesRead);
     res.status(200).json({
         object: "list",
         data: jobsList,
@@ -113,11 +125,15 @@ router.get("/v1/fine_tuning/jobs", async (req, res) => {
 
 // Retrieve fine-tuning job
 router.get("/v1/fine_tuning/jobs/:job_id", async (req, res) => {
+    then = Date.now();
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
     const job = jobs.get(req.params.job_id);
     if (!job) {
+        requestCounter.inc({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id", status: 404 });
+        requestLatency.observe({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id", status: 404 }, (Date.now() - then));
+        payloadSize.observe({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id", status: 404 }, req.socket.bytesRead);
         return res.status(404).json({
             error: {
                 message: "No fine-tuning job found",
@@ -128,16 +144,23 @@ router.get("/v1/fine_tuning/jobs/:job_id", async (req, res) => {
         });
     }
 
+    requestCounter.inc({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id", status: 200 });
+    requestLatency.observe({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id", status: 200 }, (Date.now() - then));
+    payloadSize.observe({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id", status: 200 }, req.socket.bytesRead);
     res.status(200).json(job);
 });
 
 // Cancel fine-tuning job
 router.post("/v1/fine_tuning/jobs/:job_id/cancel", async (req, res) => {
+    then = Date.now();
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
     const job = jobs.get(req.params.job_id);
     if (!job) {
+        requestCounter.inc({ method: "POST", path: "/v1/fine_tuning/jobs/:job_id/cancel", status: 404 });
+        requestLatency.observe({ method: "POST", path: "/v1/fine_tuning/jobs/:job_id/cancel", status: 404 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/fine_tuning/jobs/:job_id/cancel", status: 404 }, req.socket.bytesRead);
         return res.status(404).json({
             error: {
                 message: "No fine-tuning job found",
@@ -149,6 +172,9 @@ router.post("/v1/fine_tuning/jobs/:job_id/cancel", async (req, res) => {
     }
 
     if (job.status === "succeeded" || job.status === "failed" || job.status === "cancelled") {
+        requestCounter.inc({ method: "POST", path: "/v1/fine_tuning/jobs/:job_id/cancel", status: 400 });
+        requestLatency.observe({ method: "POST", path: "/v1/fine_tuning/jobs/:job_id/cancel", status: 400 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/fine_tuning/jobs/:job_id/cancel", status: 400 }, req.socket.bytesRead);
         return res.status(400).json({
             error: {
                 message: `Fine-tuning job ${job.status}, cannot be cancelled`,
@@ -168,6 +194,7 @@ router.post("/v1/fine_tuning/jobs/:job_id/cancel", async (req, res) => {
 
 // List fine-tuning events
 router.get("/v1/fine_tuning/jobs/:job_id/events", async (req, res) => {
+    then = Date.now();
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -175,6 +202,9 @@ router.get("/v1/fine_tuning/jobs/:job_id/events", async (req, res) => {
     const jobEvents = events.get(req.params.job_id) || [];
 
     if (!jobs.has(req.params.job_id)) {
+        requestCounter.inc({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id/events", status: 404 });
+        requestLatency.observe({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id/events", status: 404 }, (Date.now() - then));
+        payloadSize.observe({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id/events", status: 404 }, req.socket.bytesRead);
         return res.status(404).json({
             error: {
                 message: "No fine-tuning job found",
@@ -195,6 +225,9 @@ router.get("/v1/fine_tuning/jobs/:job_id/events", async (req, res) => {
 
     filteredEvents = filteredEvents.slice(0, parseInt(limit));
 
+    requestCounter.inc({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id/events", status: 200 });
+    requestLatency.observe({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id/events", status: 200 }, (Date.now() - then));
+    payloadSize.observe({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id/events", status: 200 }, req.socket.bytesRead);
     res.status(200).json({
         object: "list",
         data: filteredEvents,

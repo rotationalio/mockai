@@ -1,8 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const delay = require("../utils/delay");
+const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 router.post("/v1/moderations", async (req, res) => {
+  then = Date.now();
   const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
   await delay(delayTime);
   
@@ -39,6 +41,9 @@ router.post("/v1/moderations", async (req, res) => {
     }
   }));
 
+  requestCounter.inc({ method: "POST", path: "/v1/moderations", status: 200 });
+  requestLatency.observe({ method: "POST", path: "/v1/moderations", status: 200 }, (Date.now() - then));
+  payloadSize.observe({ method: "POST", path: "/v1/moderations", status: 200 }, req.socket.bytesRead);
   res.json({
     id: "modr-" + Math.random().toString(36).substr(2, 9),
     model: "text-moderation-latest",
