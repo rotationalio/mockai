@@ -6,20 +6,12 @@ const delay = require("../utils/delay");
 const { getMockAudioData } = require("../data/mockAudio");
 const { contextLimitExceeded } = require("../errors/contextLimit");
 const { serverDown } = require("../errors/serverDown");
-<<<<<<< HEAD
 const { rateLimitExceeded } = require("../errors/rateLimit");
-=======
->>>>>>> 573620f1955525f28f4e7aac04a605844f3fb4fe
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 // Text to Speech
 router.post("/v1/audio/speech", async (req, res) => {
   then = Date.now();
-<<<<<<< HEAD
-
-=======
-  
->>>>>>> 573620f1955525f28f4e7aac04a605844f3fb4fe
   if (serverDown()) {
     requestCounter.inc({ method: "POST", path: "/v1/audio/speech", status: 500 });
     requestLatency.observe({ method: "POST", path: "/v1/audio/speech", status: 500 }, (Date.now() - then));

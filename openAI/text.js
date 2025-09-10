@@ -4,10 +4,7 @@ const { tokenize } = require("../utils/tokenize");
 const delay = require("../utils/delay")
 const { contextLimitExceeded } = require("../errors/contextLimit");
 const { serverDown } = require("../errors/serverDown");
-<<<<<<< HEAD
 const { rateLimitExceeded } = require("../errors/rateLimit");
-=======
->>>>>>> 573620f1955525f28f4e7aac04a605844f3fb4fe
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics")
 
 const router = express.Router();

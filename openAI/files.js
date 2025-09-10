@@ -5,10 +5,7 @@ const path = require("path");
 const fs = require("fs").promises;
 const delay = require("../utils/delay");
 const { serverDown } = require("../errors/serverDown");
-<<<<<<< HEAD
 const { rateLimitExceeded } = require("../errors/rateLimit");
-=======
->>>>>>> 573620f1955525f28f4e7aac04a605844f3fb4fe
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 // Configure multer for file upload
@@ -42,7 +39,6 @@ router.get("/v1/files", async (req, res) => {
         return res.status(500).json({ error: 'Server error' });
     }
 
-<<<<<<< HEAD
     // Check if rate limit is exceeded
     const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded();
     if (rate_limit_exceeded) {
@@ -52,8 +48,6 @@ router.get("/v1/files", async (req, res) => {
         return res.status(429).json({ error: rate_limit_exceeded_reason });
     }
 
-=======
->>>>>>> 573620f1955525f28f4e7aac04a605844f3fb4fe
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -85,7 +79,6 @@ router.post("/v1/files", upload.single("file"), async (req, res) => {
         return res.status(500).json({ error: 'Server error' });
     }
 
-<<<<<<< HEAD
     // Check if rate limit is exceeded
     const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded();
     if (rate_limit_exceeded) {
@@ -95,8 +88,6 @@ router.post("/v1/files", upload.single("file"), async (req, res) => {
         return res.status(429).json({ error: rate_limit_exceeded_reason });
     }
 
-=======
->>>>>>> 573620f1955525f28f4e7aac04a605844f3fb4fe
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -165,7 +156,6 @@ router.delete("/v1/files/:file_id", async (req, res) => {
         return res.status(500).json({ error: 'Server error' });
     }
 
-<<<<<<< HEAD
     // Check if rate limit is exceeded
     const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded();
     if (rate_limit_exceeded) {
@@ -175,8 +165,6 @@ router.delete("/v1/files/:file_id", async (req, res) => {
         return res.status(429).json({ error: rate_limit_exceeded_reason });
     }
 
-=======
->>>>>>> 573620f1955525f28f4e7aac04a605844f3fb4fe
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -220,7 +208,6 @@ router.get("/v1/files/:file_id", async (req, res) => {
         return res.status(500).json({ error: 'Server error' });
     }
 
-<<<<<<< HEAD
     // Check if rate limit is exceeded
     const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded();
     if (rate_limit_exceeded) {
@@ -230,8 +217,6 @@ router.get("/v1/files/:file_id", async (req, res) => {
         return res.status(429).json({ error: rate_limit_exceeded_reason });
     }
 
-=======
->>>>>>> 573620f1955525f28f4e7aac04a605844f3fb4fe
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -271,7 +256,6 @@ router.get("/v1/files/:file_id/content", async (req, res) => {
         return res.status(500).json({ error: 'Server error' });
     }
 
-<<<<<<< HEAD
     // Check if rate limit is exceeded
     const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded();
     if (rate_limit_exceeded) {
@@ -281,8 +265,6 @@ router.get("/v1/files/:file_id/content", async (req, res) => {
         return res.status(429).json({ error: rate_limit_exceeded_reason });
     }
 
-=======
->>>>>>> 573620f1955525f28f4e7aac04a605844f3fb4fe
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 

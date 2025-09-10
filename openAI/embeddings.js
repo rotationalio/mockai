@@ -1,10 +1,7 @@
 const express = require("express");
 const { contextLimitExceeded } = require("../errors/contextLimit");
 const { serverDown } = require("../errors/serverDown");
-<<<<<<< HEAD
 const { rateLimitExceeded } = require("../errors/rateLimit");
-=======
->>>>>>> 573620f1955525f28f4e7aac04a605844f3fb4fe
 const router = express.Router();
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics")
 

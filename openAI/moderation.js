@@ -15,7 +15,6 @@ router.post("/v1/moderations", async (req, res) => {
     return res.status(500).json({ error: 'Server error' });
   }
 
-<<<<<<< HEAD
   // Check if rate limit is exceeded
   const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded();
   if (rate_limit_exceeded) {
@@ -25,8 +24,6 @@ router.post("/v1/moderations", async (req, res) => {
     return res.status(429).json({ error: rate_limit_exceeded_reason });
   }
 
-=======
->>>>>>> 573620f1955525f28f4e7aac04a605844f3fb4fe
   const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
   await delay(delayTime);
   

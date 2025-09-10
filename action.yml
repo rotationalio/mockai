@@ -35,7 +35,6 @@ inputs:
     description: 'Down Rate'
     required: false
     default: '0'
-<<<<<<< HEAD
   tokens-per-minute:
     description: 'Tokens Per Minute'
     required: false
@@ -52,8 +51,6 @@ inputs:
     description: 'Requests Per Day'
     required: false
     default: '-1'
-=======
->>>>>>> 573620f1955525f28f4e7aac04a605844f3fb4fe
 runs:
   using: 'composite'
   steps:
@@ -77,13 +74,10 @@ runs:
           -e REQUEST_SIZE_LIMIT=${{ inputs.request-size-limit }} \
           -e CONTEXT_LIMIT=${{ inputs.context-limit }} \
           -e DOWN_RATE=${{ inputs.down-rate }} \
-<<<<<<< HEAD
           -e TOKENS_PER_MINUTE=${{ inputs.tokens-per-minute }} \
           -e TOKENS_PER_DAY=${{ inputs.tokens-per-day }} \
           -e REQUESTS_PER_MINUTE=${{ inputs.requests-per-minute }} \
           -e REQUESTS_PER_DAY=${{ inputs.requests-per-day }} \
-=======
->>>>>>> 573620f1955525f28f4e7aac04a605844f3fb4fe
           mockai:latest
       shell: bash
     - name: sleep
