@@ -12,6 +12,7 @@ function contextLimitExceeded(content) {
     }
 
     // Try to convert the content to a JSON object
+    // If successful, we know it's a message and can parse it accordingly
     try {
         content = JSON.stringify(content);
     }
@@ -29,12 +30,20 @@ function contextLimitExceeded(content) {
     else if (typeof content === "object") {
         let totalTokens = 0;
         for (const message of content) {
-            totalTokens += tokenize(message.content).length;
+            if ("content" in message) {
+                // Try to tokenize the content (ensure message contains content, otherwise return false and let the individual API handle the error)
+                try {
+                    totalTokens += tokenize(message.content).length;
+                }
+                catch (error) {
+                    return false;
+                }
+            }
         }
         return totalTokens > contextLimit;
     }
 
-    // If the content is not a string or a JSON object, return false
+    // If the content is not a string or a JSON object, return false and let the individual API handle the error
     return false;
 }
 
