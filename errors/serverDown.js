@@ -5,7 +5,6 @@ function serverDown() {
     if (down_rate > 0 && generated_rate < down_rate) {
         return true;
     }
-    console.log(`Server down rate: ${down_rate}, Generated rate: ${generated_rate}`);
     return false;
 }
 
