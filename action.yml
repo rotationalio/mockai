@@ -30,7 +30,7 @@ inputs:
   context-limit:
     description: 'Context Limit'
     required: false
-    default: '4096'
+    default: '40000'
 runs:
   using: 'composite'
   steps:
