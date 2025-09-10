@@ -6,10 +6,8 @@ const { contextLimitExceeded } = require("../errors/context_limit");
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 const router = express.Router();
-const contextLimit = parseInt(process.env.CONTEXT_LIMIT) || 4096;
 
 router.post("/v1/chat/completions", async (req, res) => {
-  console.log(contextLimit);
   then = Date.now();  
   const delayHeader = req.headers["x-set-response-delay-ms"]
 
