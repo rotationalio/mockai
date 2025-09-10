@@ -51,12 +51,9 @@ router.post("/v1/audio/speech", async (req, res) => {
       .json({ error: 'Input must be provided' });
   }
 
-<<<<<<< HEAD
   requestCounter.inc({ method: "POST", path: "/v1/audio/speech", status: 200 });
   requestLatency.observe({ method: "POST", path: "/v1/audio/speech", status: 200 }, (Date.now() - then));
   payloadSize.observe({ method: "POST", path: "/v1/audio/speech", status: 200 }, req.socket.bytesRead);
-=======
->>>>>>> 5ae624266aa617c7fade414827a39f19750a2aa4
   res.send(mockAudioData);
 });
 
