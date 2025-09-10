@@ -33,6 +33,15 @@ router.post("/v1/embeddings", (req, res) => {
     // The embeddings API can take an array of strings or a single string
     // Check if the input is an array
     if (Array.isArray(input)) {
+        // Check if the input is an empty array
+        if (input.length === 0) {
+            requestCounter.inc({ method: "POST", path: "/v1/embeddings", status: 400 });
+            requestLatency.observe({ method: "POST", path: "/v1/embeddings", status: 400 }, (Date.now() - then));
+            payloadSize.observe({ method: "POST", path: "/v1/embeddings", status: 400 }, req.socket.bytesRead);
+            return res
+                .status(400)
+                .json({ error: 'If providing an array, it must not be empty' });
+        }
         // Check if the input is an array of strings
         if (!input.every(i => typeof i === "string")) {
             requestCounter.inc({ method: "POST", path: "/v1/embeddings", status: 400 });
