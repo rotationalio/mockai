@@ -27,6 +27,10 @@ inputs:
     description: 'Request Size Limit'
     required: false
     default: '10kb'
+  context-limit:
+    description: 'Context Limit'
+    required: false
+    default: '40000'
 runs:
   using: 'composite'
   steps:
@@ -48,6 +52,7 @@ runs:
           -e MOCK_FILE_SEPARATOR=${{ inputs.mock-file-separator }} \
           -e RESPONSE_DELAY_MS=${{ inputs.response-delay-ms }} \
           -e REQUEST_SIZE_LIMIT=${{ inputs.request-size-limit }} \
+          -e CONTEXT_LIMIT=${{ inputs.context-limit }} \
           mockai:latest
       shell: bash
     - name: sleep
