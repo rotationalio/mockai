@@ -1,5 +1,6 @@
 const express = require("express");
 const delay = require("../utils/delay")
+const { contextLimitExceeded } = require("../errors/contextLimit");
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics")
 
 const router = express.Router();
@@ -13,7 +14,7 @@ router.post("/v1/images/generations", async (req, res) => {
   await delay(delayTime)
   const { prompt, n } = req.body;
 
-  // Check if 'prompt' is provided and is an array
+  // Check if 'prompt' is provided
   if (!prompt) {
     requestCounter.inc({ method: "POST", path: "/v1/images/generations", status: 400 });
     requestLatency.observe({ method: "POST", path: "/v1/images/generations", status: 400 }, (Date.now() - then));
@@ -21,6 +22,23 @@ router.post("/v1/images/generations", async (req, res) => {
     return res
       .status(400)
       .json({ error: 'Missing or invalid "prompt" in request body' });
+  }
+
+  // Check if 'prompt' is a string
+  if (typeof prompt !== "string") {
+    requestCounter.inc({ method: "POST", path: "/v1/images/generations", status: 400 });
+    requestLatency.observe({ method: "POST", path: "/v1/images/generations", status: 400 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/images/generations", status: 400 }, req.socket.bytesRead);
+    return res
+      .status(400)
+      .json({ error: 'Prompt must be a string' });
+  }
+
+  // Check if the context limit is exceeded
+  if (contextLimitExceeded(prompt)) {
+    return res
+      .status(400)
+      .json({ error: 'Context limit exceeded' });
   }
 
   let nn = n;

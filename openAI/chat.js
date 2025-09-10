@@ -1,8 +1,9 @@
 const express = require("express");
 const { getRandomContents } = require("../utils/randomContents");
 const { tokenize } = require("../utils/tokenize");
-const delay = require("../utils/delay")
-const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics")
+const delay = require("../utils/delay");
+const { contextLimitExceeded } = require("../errors/contextLimit");
+const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 const router = express.Router();
 
@@ -34,13 +35,56 @@ router.post("/v1/chat/completions", async (req, res) => {
       .json({ error: 'Missing or invalid "messages" in request body' });
   }
 
+  if (messages.length === 0) {
+    return res
+      .status(400)
+      .json({ error: 'Messages must be an array of dictionaries' });
+  }
+
   // Check if 'stream' is a boolean
   if (stream !== undefined && typeof stream !== "boolean") {
     requestCounter.inc({ method: "POST", path: "/v1/chat/completions", status: 400 });
     requestLatency.observe({ method: "POST", path: "/v1/chat/completions", status: 400 }, (Date.now() - then));
     payloadSize.observe({ method: "POST", path: "/v1/chat/completions", status: 400 }, req.socket.bytesRead);
 
-    return res.status(400).json({ error: 'Invalid "stream" in request body' });
+    return res
+      .status(400)
+      .json({ error: 'Invalid "stream" in request body' });
+  }
+
+  // Check if the messages is an array of dictionaries
+  if (!messages.every(m => typeof m === "object")) {
+    return res
+      .status(400)
+      .json({ error: 'Messages must be an array of dictionaries' });
+  }
+
+  // Check if the messages is an array of dictionaries with a "content" key
+  if (!messages.every(m => "content" in m)) {
+    return res
+      .status(400)
+      .json({ error: 'Messages must be an array of dictionaries with a "content" key' });
+  }
+
+  // Check if the messages is an array of dictionaries with a "role" key
+  if (!messages.every(m => "role" in m)) {
+    return res
+      .status(400)
+      .json({ error: 'Messages must be an array of dictionaries with a "role" key' });
+  }
+
+  // Check if the content is a string
+  if (!messages.every(m => typeof m.content === "string")) {
+    return res
+      .status(400)
+      .json({ error: 'Messages must be an array of dictionaries with a "content" key' });
+  }
+
+  // Check if context limit is exceeded
+  if (contextLimitExceeded(messages)) {
+    return res
+      .status(400)
+      .json({ error: 'Context limit exceeded' });
   }
 
   // Get response content

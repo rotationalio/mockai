@@ -2,8 +2,8 @@ const express = require("express");
 const { getRandomContents } = require("../utils/randomContents");
 const { tokenize } = require("../utils/tokenize");
 const delay = require("../utils/delay")
+const { contextLimitExceeded } = require("../errors/contextLimit");
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics")
-
 
 const router = express.Router();
 
@@ -33,6 +33,18 @@ router.post("/v1/completions", async (req, res) => {
       .status(400)
       .json({ error: 'Missing or invalid "prompt" in request body' });
   }
+
+  // Check if 'prompt' is a string
+  if (typeof prompt !== "string") {
+    requestCounter.inc({ method: "POST", path: "/v1/completions", status: 400 });
+    requestLatency.observe({ method: "POST", path: "/v1/completions", status: 400 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/completions", status: 400 }, req.socket.bytesRead);
+    return res
+      .status(400)
+      .json({ error: 'Prompt must be a string' });
+  }
+
+  // Check if 'model' is provided
   if (!model) {
     requestCounter.inc({ method: "POST", path: "/v1/completions", status: 400 });
     requestLatency.observe({ method: "POST", path: "/v1/completions", status: 400 }, (Date.now() - then));
@@ -47,7 +59,16 @@ router.post("/v1/completions", async (req, res) => {
     requestCounter.inc({ method: "POST", path: "/v1/completions", status: 400 });
     requestLatency.observe({ method: "POST", path: "/v1/completions", status: 400 }, (Date.now() - then));
     payloadSize.observe({ method: "POST", path: "/v1/completions", status: 400 }, req.socket.bytesRead);
-    return res.status(400).json({ error: 'Invalid "stream" in request body' });
+    return res
+      .status(400)
+      .json({ error: 'Invalid "stream" in request body' });
+  }
+
+  // Check if context limit is exceeded
+  if (contextLimitExceeded(prompt)) {
+    return res
+      .status(400)
+      .json({ error: 'Context limit exceeded' });
   }
 
   // Get response content

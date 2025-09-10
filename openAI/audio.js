@@ -4,6 +4,8 @@ const multer = require('multer');
 const upload = multer();
 const delay = require("../utils/delay");
 const { getMockAudioData } = require("../data/mockAudio");
+const { contextLimitExceeded } = require("../errors/contextLimit");
+const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 // Text to Speech
 router.post("/v1/audio/speech", async (req, res) => {
@@ -21,6 +23,33 @@ router.post("/v1/audio/speech", async (req, res) => {
     'Content-Length': mockAudioData.length
   });
 
+  if (input) {
+    if (typeof input !== "string") {
+      requestCounter.inc({ method: "POST", path: "/v1/audio/speech", status: 400 });
+      requestLatency.observe({ method: "POST", path: "/v1/audio/speech", status: 400 }, (Date.now() - then));
+      payloadSize.observe({ method: "POST", path: "/v1/audio/speech", status: 400 }, req.socket.bytesRead);
+      return res
+        .status(400)
+        .json({ error: 'Input must be a string' });
+    }
+    if (contextLimitExceeded(input)) {
+      requestCounter.inc({ method: "POST", path: "/v1/audio/speech", status: 400 });
+      requestLatency.observe({ method: "POST", path: "/v1/audio/speech", status: 400 }, (Date.now() - then));
+      payloadSize.observe({ method: "POST", path: "/v1/audio/speech", status: 400 }, req.socket.bytesRead);
+      return res
+        .status(400)
+        .json({ error: 'Context limit exceeded' });
+    }
+  }
+  else {
+    requestCounter.inc({ method: "POST", path: "/v1/audio/speech", status: 400 });
+    requestLatency.observe({ method: "POST", path: "/v1/audio/speech", status: 400 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/audio/speech", status: 400 }, req.socket.bytesRead);
+    return res
+      .status(400)
+      .json({ error: 'Input must be provided' });
+  }
+
   res.send(mockAudioData);
 });
 
@@ -31,6 +60,26 @@ router.post("/v1/audio/transcriptions", upload.single('file'), async (req, res) 
 
   const { model = "whisper-1", language, prompt, response_format = "json", temperature = 0 } = req.body;
   const format = response_format;
+
+  // Prompt is optional, but if it is provided, we need to check if it exceeds the context limit
+  if (prompt) {
+    if (typeof prompt !== "string") {
+      requestCounter.inc({ method: "POST", path: "/v1/audio/transcriptions", status: 400 });
+      requestLatency.observe({ method: "POST", path: "/v1/audio/transcriptions", status: 400 }, (Date.now() - then));
+      payloadSize.observe({ method: "POST", path: "/v1/audio/transcriptions", status: 400 }, req.socket.bytesRead);
+      return res
+        .status(400)
+        .json({ error: 'Prompt must be a string' });
+    }
+    if (contextLimitExceeded(prompt)) {
+      requestCounter.inc({ method: "POST", path: "/v1/audio/transcriptions", status: 400 });
+      requestLatency.observe({ method: "POST", path: "/v1/audio/transcriptions", status: 400 }, (Date.now() - then));
+      payloadSize.observe({ method: "POST", path: "/v1/audio/transcriptions", status: 400 }, req.socket.bytesRead);
+      return res
+        .status(400)
+        .json({ error: 'Context limit exceeded' });
+    }
+  }
 
   // Mock transcription response
   const transcription = {
@@ -88,6 +137,26 @@ router.post("/v1/audio/translations", upload.single('file'), async (req, res) =>
   const translation = {
     text: "This is a mock translation to English. The quick brown fox jumps over the lazy dog.",
   };
+
+  // Prompt is optional, but if it is provided, we need to check if it exceeds the context limit
+  if (prompt) {
+    if (typeof prompt !== "string") {
+      requestCounter.inc({ method: "POST", path: "/v1/audio/translations", status: 400 });
+      requestLatency.observe({ method: "POST", path: "/v1/audio/translations", status: 400 }, (Date.now() - then));
+      payloadSize.observe({ method: "POST", path: "/v1/audio/translations", status: 400 }, req.socket.bytesRead);
+      return res
+        .status(400)
+        .json({ error: 'Prompt must be a string' });
+    }
+    if (contextLimitExceeded(prompt)) {
+      requestCounter.inc({ method: "POST", path: "/v1/audio/translations", status: 400 });
+      requestLatency.observe({ method: "POST", path: "/v1/audio/translations", status: 400 }, (Date.now() - then));
+      payloadSize.observe({ method: "POST", path: "/v1/audio/translations", status: 400 }, req.socket.bytesRead);
+      return res
+        .status(400)
+        .json({ error: 'Context limit exceeded' });
+    }
+  }
 
   if (format === "verbose_json") {
     const verboseResponse = {
