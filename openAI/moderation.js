@@ -3,6 +3,7 @@ const router = express.Router();
 const delay = require("../utils/delay");
 const { serverDown } = require("../errors/serverDown");
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
+const { rateLimitExceeded } = require("../errors/rateLimit");
 
 router.post("/v1/moderations", async (req, res) => {
   then = Date.now();
@@ -12,6 +13,15 @@ router.post("/v1/moderations", async (req, res) => {
     requestLatency.observe({ method: "POST", path: "/v1/moderations", status: 500 }, (Date.now() - then));
     payloadSize.observe({ method: "POST", path: "/v1/moderations", status: 500 }, req.socket.bytesRead);
     return res.status(500).json({ error: 'Server error' });
+  }
+
+  // Check if rate limit is exceeded
+  const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded();
+  if (rate_limit_exceeded) {
+    requestCounter.inc({ method: "POST", path: "/v1/moderations", status: 429 });
+    requestLatency.observe({ method: "POST", path: "/v1/moderations", status: 429 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/moderations", status: 429 }, req.socket.bytesRead);
+    return res.status(429).json({ error: rate_limit_exceeded_reason });
   }
 
   const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
