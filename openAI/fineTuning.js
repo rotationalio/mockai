@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const delay = require("../utils/delay");
 const { serverDown } = require("../errors/serverDown");
+const { rateLimitExceeded } = require("../errors/rateLimit");
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 // Mock fine-tuning job data store
@@ -51,6 +52,15 @@ router.post("/v1/fine_tuning/jobs", async (req, res) => {
         requestLatency.observe({ method: "POST", path: "/v1/fine_tuning/jobs", status: 500 }, (Date.now() - then));
         payloadSize.observe({ method: "POST", path: "/v1/fine_tuning/jobs", status: 500 }, req.socket.bytesRead);
         return res.status(500).json({ error: 'Server error' });
+    }
+
+    // Check if rate limit is exceeded
+    const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded();
+    if (rate_limit_exceeded) {
+        requestCounter.inc({ method: "POST", path: "/v1/fine_tuning/jobs", status: 429 });
+        requestLatency.observe({ method: "POST", path: "/v1/fine_tuning/jobs", status: 429 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/fine_tuning/jobs", status: 429 }, req.socket.bytesRead);
+        return res.status(429).json({ error: rate_limit_exceeded_reason });
     }
 
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
@@ -111,6 +121,15 @@ router.get("/v1/fine_tuning/jobs", async (req, res) => {
         return res.status(500).json({ error: 'Server error' });
     }
 
+    // Check if rate limit is exceeded
+    const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded();
+    if (rate_limit_exceeded) {
+        requestCounter.inc({ method: "GET", path: "/v1/fine_tuning/jobs", status: 429 });
+        requestLatency.observe({ method: "GET", path: "/v1/fine_tuning/jobs", status: 429 }, (Date.now() - then));
+        payloadSize.observe({ method: "GET", path: "/v1/fine_tuning/jobs", status: 429 }, req.socket.bytesRead);
+        return res.status(429).json({ error: rate_limit_exceeded_reason });
+    }
+
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -151,6 +170,15 @@ router.get("/v1/fine_tuning/jobs/:job_id", async (req, res) => {
         return res.status(500).json({ error: 'Server error' });
     }
 
+    // Check if rate limit is exceeded
+    const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded();
+    if (rate_limit_exceeded) {
+        requestCounter.inc({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id", status: 429 });
+        requestLatency.observe({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id", status: 429 }, (Date.now() - then));
+        payloadSize.observe({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id", status: 429 }, req.socket.bytesRead);
+        return res.status(429).json({ error: rate_limit_exceeded_reason });
+    }
+
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
     await delay(delayTime);
 
@@ -184,6 +212,15 @@ router.post("/v1/fine_tuning/jobs/:job_id/cancel", async (req, res) => {
         requestLatency.observe({ method: "POST", path: "/v1/fine_tuning/jobs/:job_id/cancel", status: 500 }, (Date.now() - then));
         payloadSize.observe({ method: "POST", path: "/v1/fine_tuning/jobs/:job_id/cancel", status: 500 }, req.socket.bytesRead);
         return res.status(500).json({ error: 'Server error' });
+    }
+
+    // Check if rate limit is exceeded
+    const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded();
+    if (rate_limit_exceeded) {
+        requestCounter.inc({ method: "POST", path: "/v1/fine_tuning/jobs/:job_id/cancel", status: 429 });
+        requestLatency.observe({ method: "POST", path: "/v1/fine_tuning/jobs/:job_id/cancel", status: 429 }, (Date.now() - then));
+        payloadSize.observe({ method: "POST", path: "/v1/fine_tuning/jobs/:job_id/cancel", status: 429 }, req.socket.bytesRead);
+        return res.status(429).json({ error: rate_limit_exceeded_reason });
     }
 
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;
@@ -234,6 +271,15 @@ router.get("/v1/fine_tuning/jobs/:job_id/events", async (req, res) => {
         requestLatency.observe({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id/events", status: 500 }, (Date.now() - then));
         payloadSize.observe({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id/events", status: 500 }, req.socket.bytesRead);
         return res.status(500).json({ error: 'Server error' });
+    }
+
+    // Check if rate limit is exceeded
+    const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded();
+    if (rate_limit_exceeded) {
+        requestCounter.inc({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id/events", status: 429 });
+        requestLatency.observe({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id/events", status: 429 }, (Date.now() - then));
+        payloadSize.observe({ method: "GET", path: "/v1/fine_tuning/jobs/:job_id/events", status: 429 }, req.socket.bytesRead);
+        return res.status(429).json({ error: rate_limit_exceeded_reason });
     }
 
     const delayTime = parseInt(req.headers["x-set-response-delay-ms"]) || 0;

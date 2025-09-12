@@ -4,6 +4,7 @@ const { tokenize } = require("../utils/tokenize");
 const delay = require("../utils/delay");
 const { contextLimitExceeded } = require("../errors/contextLimit");
 const { serverDown } = require("../errors/serverDown");
+const { rateLimitExceeded } = require("../errors/rateLimit");
 const { requestCounter, requestLatency, payloadSize } = require("../utils/metrics");
 
 const router = express.Router();
@@ -45,6 +46,9 @@ router.post("/v1/chat/completions", async (req, res) => {
   }
 
   if (messages.length === 0) {
+    requestCounter.inc({ method: "POST", path: "/v1/chat/completions", status: 400 });
+    requestLatency.observe({ method: "POST", path: "/v1/chat/completions", status: 400 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/chat/completions", status: 400 }, req.socket.bytesRead);
     return res
       .status(400)
       .json({ error: 'Messages must be an array of dictionaries' });
@@ -55,7 +59,6 @@ router.post("/v1/chat/completions", async (req, res) => {
     requestCounter.inc({ method: "POST", path: "/v1/chat/completions", status: 400 });
     requestLatency.observe({ method: "POST", path: "/v1/chat/completions", status: 400 }, (Date.now() - then));
     payloadSize.observe({ method: "POST", path: "/v1/chat/completions", status: 400 }, req.socket.bytesRead);
-
     return res
       .status(400)
       .json({ error: 'Invalid "stream" in request body' });
@@ -63,6 +66,9 @@ router.post("/v1/chat/completions", async (req, res) => {
 
   // Check if the messages is an array of dictionaries
   if (!messages.every(m => typeof m === "object")) {
+    requestCounter.inc({ method: "POST", path: "/v1/chat/completions", status: 400 });
+    requestLatency.observe({ method: "POST", path: "/v1/chat/completions", status: 400 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/chat/completions", status: 400 }, req.socket.bytesRead);
     return res
       .status(400)
       .json({ error: 'Messages must be an array of dictionaries' });
@@ -70,6 +76,9 @@ router.post("/v1/chat/completions", async (req, res) => {
 
   // Check if the messages is an array of dictionaries with a "content" key
   if (!messages.every(m => "content" in m)) {
+    requestCounter.inc({ method: "POST", path: "/v1/chat/completions", status: 400 });
+    requestLatency.observe({ method: "POST", path: "/v1/chat/completions", status: 400 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/chat/completions", status: 400 }, req.socket.bytesRead);
     return res
       .status(400)
       .json({ error: 'Messages must be an array of dictionaries with a "content" key' });
@@ -77,6 +86,9 @@ router.post("/v1/chat/completions", async (req, res) => {
 
   // Check if the messages is an array of dictionaries with a "role" key
   if (!messages.every(m => "role" in m)) {
+    requestCounter.inc({ method: "POST", path: "/v1/chat/completions", status: 400 });
+    requestLatency.observe({ method: "POST", path: "/v1/chat/completions", status: 400 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/chat/completions", status: 400 }, req.socket.bytesRead);
     return res
       .status(400)
       .json({ error: 'Messages must be an array of dictionaries with a "role" key' });
@@ -84,13 +96,30 @@ router.post("/v1/chat/completions", async (req, res) => {
 
   // Check if the content is a string
   if (!messages.every(m => typeof m.content === "string")) {
+    requestCounter.inc({ method: "POST", path: "/v1/chat/completions", status: 400 });
+    requestLatency.observe({ method: "POST", path: "/v1/chat/completions", status: 400 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/chat/completions", status: 400 }, req.socket.bytesRead);
     return res
       .status(400)
       .json({ error: 'Messages must be an array of dictionaries with a "content" key' });
   }
 
+  // Check if rate limit is exceeded
+  const { exceeded: rate_limit_exceeded, reason: rate_limit_exceeded_reason } = rateLimitExceeded(messages);
+  if (rate_limit_exceeded) {
+    requestCounter.inc({ method: "POST", path: "/v1/chat/completions", status: 429 });
+    requestLatency.observe({ method: "POST", path: "/v1/chat/completions", status: 429 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/chat/completions", status: 429 }, req.socket.bytesRead);
+    return res
+      .status(429)
+      .json({ error: rate_limit_exceeded_reason });
+  }
+
   // Check if context limit is exceeded
   if (contextLimitExceeded(messages)) {
+    requestCounter.inc({ method: "POST", path: "/v1/chat/completions", status: 400 });
+    requestLatency.observe({ method: "POST", path: "/v1/chat/completions", status: 400 }, (Date.now() - then));
+    payloadSize.observe({ method: "POST", path: "/v1/chat/completions", status: 400 }, req.socket.bytesRead);
     return res
       .status(400)
       .json({ error: 'Context limit exceeded' });
