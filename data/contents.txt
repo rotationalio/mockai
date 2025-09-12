@@ -20,3 +20,12 @@ This is a break line text.
 def greet(name):
   print('Hello, ' + name + '!')
 ```
+@@@@
+The opening lines to Henry David Thoreau's Walden are:
+'When I wrote the following pages, or rather the bulk of them, I lived alone, in the woods, a mile from any neighbor, in a house which I had built myself, on the shore of Walden Pond, in Concord, Massachusetts, and earned my living by the labor of my hands only. I lived there two years and two months. At present I am a sojourner in civilized life again.'
+@@@@
+I cannot process the request because it contains sensitive information about generating harmful code. My purpose is to be helpful and harmless, and that includes refusing to engage with any form of malicious code generation.
+@@@@
+1. For each customer (recname), calculate the count of unique `calendar_week` values (denominator). 2. For each customer (recname), calculate the count of unique `calendar_week` values where `is_take_a_ride` is True (numerator). 3. For each customer (recname), calculate the ride frequency rate as numerator ÷ denominator. 4. Calculate the total `qtytakearide` for each customer (recname). 5. Calculate the total `qtydelivered` for each customer (recname). 6. Calculate the sum of `totalcharged` for each customer (recname). 7. Filter for customers where the ride frequency rate is at least 0.5. 8. Display the customer names (recname), their calculated ride frequency, total `qtytakearide`, total `qtydelivered`, and total `totalcharged`, sorted by total `qtytakearide`.
+@@@@
+["Customer Name", "Ride Frequency", "Total Ride Quantity", "Total Delivered Quantity", "Total Revenue", "is_take_a_ride", "Order Week"]
